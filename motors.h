@@ -3,6 +3,7 @@
 #include "pid.h"
 
 // PID controllers (accessible by comms.cpp for live tuning)
+extern PID velXPID, velYPID;
 extern PID rollAnglePID, pitchAnglePID;
 extern PID rollRatePID, pitchRatePID;
 extern PID yawRatePID;

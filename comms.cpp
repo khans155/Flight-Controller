@@ -46,6 +46,9 @@ void handleRemoteCommands() {
   else if (cmd.startsWith("YP "))  { yawRatePID.kp   = cmd.substring(3).toFloat(); remotePrint("Yaw Rate KP=%.4f\r\n", yawRatePID.kp); }
   else if (cmd.startsWith("YI "))  { yawRatePID.ki   = cmd.substring(3).toFloat(); remotePrint("Yaw Rate KI=%.4f\r\n", yawRatePID.ki); }
   else if (cmd.startsWith("YD "))  { yawRatePID.kd   = cmd.substring(3).toFloat(); remotePrint("Yaw Rate KD=%.4f\r\n", yawRatePID.kd); }
+  else if (cmd.startsWith("VP "))  { velXPID.kp      = velYPID.kp       = cmd.substring(3).toFloat(); remotePrint("Vel KP=%.4f\r\n",      velXPID.kp); }
+  else if (cmd.startsWith("VI "))  { velXPID.ki      = velYPID.ki       = cmd.substring(3).toFloat(); remotePrint("Vel KI=%.4f\r\n",      velXPID.ki); }
+  else if (cmd.startsWith("VD "))  { velXPID.kd      = velYPID.kd       = cmd.substring(3).toFloat(); remotePrint("Vel KD=%.4f\r\n",      velXPID.kd); }
   else if (cmd.startsWith("M1 "))  { m1_offset = cmd.substring(3).toFloat(); remotePrint("M1 offset=%.3f\r\n", m1_offset); }
   else if (cmd.startsWith("M2 "))  { m2_offset = cmd.substring(3).toFloat(); remotePrint("M2 offset=%.3f\r\n", m2_offset); }
   else if (cmd.startsWith("M3 "))  { m3_offset = cmd.substring(3).toFloat(); remotePrint("M3 offset=%.3f\r\n", m3_offset); }

@@ -4,8 +4,12 @@
 #include <ps5Controller.h>
 
 // -------------------- PID Controllers --------------------
+PID velXPID = {VEL_KP, VEL_KI, VEL_KD, 0, 0, 0, PID_D_ALPHA_VEL, VEL_ANGLE_LIM};
+PID velYPID = {VEL_KP, VEL_KI, VEL_KD, 0, 0, 0, PID_D_ALPHA_VEL, VEL_ANGLE_LIM};
+
 PID rollAnglePID  = {ROLL_ANGLE_KP,  ROLL_ANGLE_KI,  ROLL_ANGLE_KD,  0,0,0, PID_D_ALPHA_ANGLE, ROLL_ANGLE_LIM};
 PID pitchAnglePID = {PITCH_ANGLE_KP, PITCH_ANGLE_KI, PITCH_ANGLE_KD, 0,0,0, PID_D_ALPHA_ANGLE, PITCH_ANGLE_LIM};
+
 PID rollRatePID   = {ROLL_RATE_KP,   ROLL_RATE_KI,   ROLL_RATE_KD,   0,0,0, PID_D_ALPHA_RATE,  ROLL_RATE_LIM};
 PID pitchRatePID  = {PITCH_RATE_KP,  PITCH_RATE_KI,  PITCH_RATE_KD,  0,0,0, PID_D_ALPHA_RATE,  PITCH_RATE_LIM};
 PID yawRatePID    = {YAW_RATE_KP,    YAW_RATE_KI,    YAW_RATE_KD,    0,0,0, PID_D_ALPHA_RATE,  YAW_RATE_LIM};
@@ -148,11 +152,23 @@ void mixMotor() {
   lastMicros = now;
   if (dt <= 0.0f || dt > 0.05f) return;
 
-  float desiredRollAngle  = rollOffset  * ANGLE_SCALE;
-  float desiredPitchAngle = pitchOffset * ANGLE_SCALE;
-  float desiredYawRate    = yawOffset   * YAW_RATE_SCALE;
-
   bool lowThrottle = (throttle < LOW_THROTTLE_THRESHOLD);
+  float desiredRollAngle = 0, desiredPitchAngle = 0;
+
+  if (abs(pitchOffset) > 50) {
+      desiredPitchAngle = pitchOffset * ANGLE_SCALE;
+      velXPID.integral = 0; 
+    } else {
+      desiredPitchAngle = computePID(velYPID, vy_f, dt, lowThrottle);
+    }
+  if (abs(rollOffset) > 50) {
+      desiredRollAngle = rollOffset * ANGLE_SCALE;
+      velXPID.integral = 0; 
+    } else {
+      desiredRollAngle = computePID(velXPID, vx_f, dt, lowThrottle);
+    }
+
+  float desiredYawRate    = yawOffset   * YAW_RATE_SCALE;
 
   float dRollRate  = computePID(rollAnglePID,  -desiredRollAngle  - pitch_ag - pitch_offset, dt, lowThrottle);
   float dPitchRate = computePID(pitchAnglePID, desiredPitchAngle - roll_ag - roll_offset,  dt, lowThrottle);
@@ -160,7 +176,6 @@ void mixMotor() {
   float rCorr = computePID(rollRatePID,  dRollRate  + gy_f, dt, lowThrottle);
   float pCorr = computePID(pitchRatePID, dPitchRate - gx_f, dt, lowThrottle);
   float yCorr = computePID(yawRatePID,   desiredYawRate + gz_f, dt, lowThrottle);
-
 
 
 
