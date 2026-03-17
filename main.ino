@@ -1,8 +1,8 @@
-#include "config.h"
-#include "sensors.h"
-#include "motors.h"
-#include "comms.h"
-#include "optical_flow.h"
+#include "src/config.h"
+#include "src/sensors.h"
+#include "src/motors.h"
+#include "src/comms.h"
+#include "src/optical_flow.h"
 
 //hw_timer_t *sensorTimer     = NULL;
 hw_timer_t *lidarTimer      = NULL;
