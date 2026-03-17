@@ -49,6 +49,9 @@ void handleRemoteCommands() {
   else if (cmd.startsWith("VP "))  { velXPID.kp      = velYPID.kp       = cmd.substring(3).toFloat(); remotePrint("Vel KP=%.4f\r\n",      velXPID.kp); }
   else if (cmd.startsWith("VI "))  { velXPID.ki      = velYPID.ki       = cmd.substring(3).toFloat(); remotePrint("Vel KI=%.4f\r\n",      velXPID.ki); }
   else if (cmd.startsWith("VD "))  { velXPID.kd      = velYPID.kd       = cmd.substring(3).toFloat(); remotePrint("Vel KD=%.4f\r\n",      velXPID.kd); }
+  else if (cmd.startsWith("AP "))  { altPID.kp = cmd.substring(3).toFloat(); remotePrint("Alt KP=%.4f\r\n", altPID.kp); }
+  else if (cmd.startsWith("AI "))  { altPID.ki = cmd.substring(3).toFloat(); remotePrint("Alt KI=%.4f\r\n", altPID.ki); }
+  else if (cmd.startsWith("AD "))  { altPID.kd = cmd.substring(3).toFloat(); remotePrint("Alt KD=%.4f\r\n", altPID.kd); }
   else if (cmd.startsWith("M1 "))  { m1_offset = cmd.substring(3).toFloat(); remotePrint("M1 offset=%.3f\r\n", m1_offset); }
   else if (cmd.startsWith("M2 "))  { m2_offset = cmd.substring(3).toFloat(); remotePrint("M2 offset=%.3f\r\n", m2_offset); }
   else if (cmd.startsWith("M3 "))  { m3_offset = cmd.substring(3).toFloat(); remotePrint("M3 offset=%.3f\r\n", m3_offset); }

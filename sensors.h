@@ -18,6 +18,7 @@ extern float mx_f, my_f, mz_f;
 extern float roll_ag, pitch_ag, yaw_ag;
 extern float yaw_mag;
 extern float ax_world, ay_world;
+extern float vx_est, vy_est;
 
 extern volatile float vx, vy, vz, vx_f, vy_f, vz_f;
 extern volatile float height_lidar;

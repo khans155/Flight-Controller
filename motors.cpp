@@ -14,6 +14,8 @@ PID rollRatePID   = {ROLL_RATE_KP,   ROLL_RATE_KI,   ROLL_RATE_KD,   0,0,0, PID_
 PID pitchRatePID  = {PITCH_RATE_KP,  PITCH_RATE_KI,  PITCH_RATE_KD,  0,0,0, PID_D_ALPHA_RATE,  PITCH_RATE_LIM};
 PID yawRatePID    = {YAW_RATE_KP,    YAW_RATE_KI,    YAW_RATE_KD,    0,0,0, PID_D_ALPHA_RATE,  YAW_RATE_LIM};
 
+PID altPID = {ALT_KP, ALT_KI, ALT_KD, 0, 0, 0, PID_D_ALPHA_ALT, ALT_RATE_LIMIT};
+
 // -------------------- Motor state --------------------
 float m1_offset = M1_OFFSET_DEFAULT;
 float m2_offset = M2_OFFSET_DEFAULT;
@@ -28,6 +30,13 @@ uint16_t throttle = 1000;
 int rollOffset = 0, pitchOffset = 0, yawOffset = 0;
 
 static uint32_t lastMicros = 0;
+bool armed = false;
+
+bool altHoldActive = false;
+float targetHeight = 0;
+uint16_t baseThrottle = 1221; 
+float lastValidHeight = 0;
+float real_height = 0;
 
 // -------------------- Utilities --------------------
 float floatMap(float x, float in_min, float in_max, float out_min, float out_max) {
@@ -58,6 +67,24 @@ if (!ps5.isConnected()) {
     rollOffset = pitchOffset = yawOffset = 0;
     return;
   }
+  static bool xPressedLast = false;
+  bool xPressedNow = ps5.Cross();
+  real_height =  fabsf(height_lidar* cos(roll_ag* DEG_TO_RAD) * cos(pitch_ag* DEG_TO_RAD));
+  if (armed){
+    if (xPressedNow && !xPressedLast) {
+      if (!altHoldActive) {
+        if (height_lidar > 0 && height_lidar <= MAX_ALTITUDE) {
+          altHoldActive = true;
+          targetHeight = real_height;
+          baseThrottle = throttle; 
+          altPID.integral = 0;       
+        }
+      } else {
+        altHoldActive = false;
+      }
+    }
+    xPressedLast = xPressedNow;
+  }
 
   // 1. Use signed integers for raw inputs
   int16_t roll_raw  = constrain(ps5.LStickX(), -127, 127);
@@ -78,44 +105,49 @@ if (!ps5.isConnected()) {
 // 2. R1 arms motors to idle — only allowed from disarmed (1000)
   if (ps5.R1() && throttle == 1000) {
     throttle = 1221;
+    armed = true;
   }
 
-  // 3. Throttle step control via R2 (increase) and L2 (decrease)
-  const int triggerDeadzone = 10;
 
-  uint8_t r2 = ps5.R2Value();
-  uint8_t l2 = ps5.L2Value();
+  if (!altHoldActive) {
+    // 3. Throttle step control via R2 (increase) and L2 (decrease)
+    const int triggerDeadzone = 10;
 
-  if (r2 <= triggerDeadzone) r2 = 0;
-  if (l2 <= triggerDeadzone) l2 = 0;
+    uint8_t r2 = ps5.R2Value();
+    uint8_t l2 = ps5.L2Value();
 
-  static unsigned long lastR2Step = 0;
-  static unsigned long lastL2Step = 0;
-  unsigned long now = millis();
+    if (r2 <= triggerDeadzone) r2 = 0;
+    if (l2 <= triggerDeadzone) l2 = 0;
 
-  // R2 only increases throttle once armed (throttle >= 1221)
-  if (r2 > 0 && throttle >= 1221) {
-    float rate = floatMap(r2, triggerDeadzone, 255, 1.0f, 100.0f);
-    unsigned long interval = (unsigned long)(1000.0f / rate);
-    if (now - lastR2Step >= interval) {
-      throttle = constrain(throttle + 1, 1221, 2000);
-      lastR2Step = now;
+    static unsigned long lastR2Step = 0;
+    static unsigned long lastL2Step = 0;
+    unsigned long now = millis();
+
+    // R2 only increases throttle once armed (throttle >= 1221)
+    if (r2 > 0 && throttle >= 1221) {
+      float rate = floatMap(r2, triggerDeadzone, 255, 1.0f, 100.0f);
+      unsigned long interval = (unsigned long)(1000.0f / rate);
+      if (now - lastR2Step >= interval) {
+        throttle = constrain(throttle + 1, 1221, 2000);
+        lastR2Step = now;
+      }
+    }
+
+    // L2 only decreases throttle once armed, floor is idle (1221)
+    if (l2 > 0 && throttle >= 1221) {
+      float rate = floatMap(l2, triggerDeadzone, 255, 1.0f, 150.0f);
+      unsigned long interval = (unsigned long)(1000.0f / rate);
+      if (now - lastL2Step >= interval) {
+        throttle = constrain(throttle - 1, 1221, 2000);
+        lastL2Step = now;
+      }
     }
   }
-
-  // L2 only decreases throttle once armed, floor is idle (1221)
-  if (l2 > 0 && throttle >= 1221) {
-    float rate = floatMap(l2, triggerDeadzone, 255, 1.0f, 150.0f);
-    unsigned long interval = (unsigned long)(1000.0f / rate);
-    if (now - lastL2Step >= interval) {
-      throttle = constrain(throttle - 1, 1221, 2000);
-      lastL2Step = now;
-    }
-  }
-
   // 4. L1 disarms — resets throttle to minimum (1000)
   if (ps5.L1()) {
     throttle = 1000;
+    armed = false;
+    altHoldActive = false;
   }
 
   // 5. Final Constraints
@@ -159,16 +191,16 @@ void mixMotor() {
       desiredPitchAngle = pitchOffset * ANGLE_SCALE;
       velXPID.integral = 0; 
     } else {
-      desiredPitchAngle = computePID(velYPID, vy_f, dt, lowThrottle);
+      desiredPitchAngle = computePID(velYPID, vy_est, dt, lowThrottle);
     }
   if (abs(rollOffset) > 50) {
       desiredRollAngle = rollOffset * ANGLE_SCALE;
       velXPID.integral = 0; 
     } else {
-      desiredRollAngle = computePID(velXPID, vx_f, dt, lowThrottle);
+      desiredRollAngle = computePID(velXPID, vx_est, dt, lowThrottle);
     }
 
-  float desiredYawRate    = yawOffset   * YAW_RATE_SCALE;
+  float desiredYawRate  = yawOffset   * YAW_RATE_SCALE;
 
   float dRollRate  = computePID(rollAnglePID,  -desiredRollAngle  - pitch_ag - pitch_offset, dt, lowThrottle);
   float dPitchRate = computePID(pitchAnglePID, desiredPitchAngle - roll_ag - roll_offset,  dt, lowThrottle);
@@ -178,16 +210,44 @@ void mixMotor() {
   float yCorr = computePID(yawRatePID,   desiredYawRate + gz_f, dt, lowThrottle);
 
 
+  // Altitude hold
+  float finalThrottle = throttle;
+  if (altHoldActive) {
+    // 1. Data Validation Gate
+    bool heightIsSanityChecked = true;
+    
+    if (height_lidar <= 0 || height_lidar > MAX_ALTITUDE) {
+        heightIsSanityChecked = false; // Out of range
+    } else if (abs(real_height - lastValidHeight) > HEIGHT_SPIKE_LIMIT && lastValidHeight != 0) {
+        heightIsSanityChecked = false; // Glitch/Spike
+    }
+
+    if (heightIsSanityChecked) {
+      // 2. Compute PID correction
+      float altCorrection = computePID(altPID, targetHeight - real_height, dt, lowThrottle);
+      
+      // 3. Apply correction to the base throttle
+      finalThrottle = baseThrottle + altCorrection;
+      
+      // Update the manual throttle variable so when we switch off, we stay at this level
+      throttle = constrain((uint16_t)finalThrottle, 1221, 2000); 
+      lastValidHeight = real_height;
+    } else {
+      // SAFETY: If sensor fails, just hover at the last known good throttle
+      finalThrottle = throttle; 
+    }
+  }
+
 
   m1_offset = constrain(m1_offset, 0, 1.5f);
   m2_offset = constrain(m2_offset, 0, 1.5f);
   m3_offset = constrain(m3_offset, 0, 1.5f);
   m4_offset = constrain(m4_offset, 0, 1.5f);
 
-  m1_corr = (uint16_t)(throttle * m1_offset - pCorr + rCorr - yCorr);
-  m2_corr = (uint16_t)(throttle * m2_offset - pCorr - rCorr + yCorr);
-  m3_corr = (uint16_t)(throttle * m3_offset + pCorr + rCorr + yCorr);
-  m4_corr = (uint16_t)(throttle * m4_offset + pCorr - rCorr - yCorr);
+  m1_corr = (uint16_t)(finalThrottle * m1_offset - pCorr + rCorr - yCorr);
+  m2_corr = (uint16_t)(finalThrottle * m2_offset - pCorr - rCorr + yCorr);
+  m3_corr = (uint16_t)(finalThrottle * m3_offset + pCorr + rCorr + yCorr);
+  m4_corr = (uint16_t)(finalThrottle * m4_offset + pCorr - rCorr - yCorr);
 
   if (lowThrottle) {
     m1 = m2 = m3 = m4 = 1000;

@@ -6,7 +6,7 @@
 extern PID velXPID, velYPID;
 extern PID rollAnglePID, pitchAnglePID;
 extern PID rollRatePID, pitchRatePID;
-extern PID yawRatePID;
+extern PID yawRatePID, altPID ;
 
 // Motor offsets (adjustable via telnet)
 extern float m1_offset, m2_offset, m3_offset, m4_offset;
@@ -19,6 +19,7 @@ extern uint16_t m1_corr, m2_corr, m3_corr, m4_corr;
 // RC inputs (set by readPS5)
 extern uint16_t throttle;
 extern int rollOffset, pitchOffset, yawOffset;
+extern float real_height;
 
 void initMotors(const char* ps5Mac);
 void mixMotor();

@@ -16,7 +16,7 @@ float roll_kal = 0, pitch_kal = 0;
 float yaw_mag = 0;
 float yaw_error = 0;
 float ax_world = 0, ay_world = 0;
-
+float vx_est = 0, vy_est = 0;
 
 volatile float vx = 0, vy = 0, vz = 0, vx_f = 0, vy_f = 0, vz_f = 0;
 volatile float height_lidar = 0;
@@ -32,7 +32,7 @@ int16_t gyroX, gyroY, gyroZ;
 int16_t magX, magY, magZ;
 
 BiquadState stGX, stGY, stGZ, stAX, stAY, stAZ;
-BiquadState stMX, stMY, stMZ, stVX, stVY, stVZ;
+BiquadState stMX, stMY, stMZ, stVX, stVY, stVZ, stVesX, stVesY;
 
 SemaphoreHandle_t magMutex = xSemaphoreCreateMutex();
 
@@ -242,9 +242,10 @@ void updateFilter() {
   filterLastMicros = now;
   if (dt <= 0.0001f || dt > 0.05f) return;
 
-  BiquadCoeffs gCoeffs, aCoeffs, mCoeffs, vCoeffs;
+  BiquadCoeffs gCoeffs, aCoeffs, mCoeffs, vCoeffs, vesCoeffs;
   computeCoeffs(gCoeffs, GYRO_LPF_CUTOFF, dt);
   computeCoeffs(aCoeffs, ACC_LPF_CUTOFF, dt);
+  computeCoeffs(vesCoeffs, 100.0f, dt);
 
   // Gyro
   float gx = gyroX / 32.8f;
@@ -275,6 +276,10 @@ void updateFilter() {
   //-----------MAHONY UPDATE-----------------
   mahonyUpdate(gx_f, gy_f, gz_f, ax_f, ay_f, az_f, dt);
   quaternionToEuler(roll_ag, pitch_ag, yaw_ag);
+  getWorldAcceleration(ax_f , ay_f , az_f , ax_world, ay_world);
+  if (fabsf(ax_world ) < 8.0f) {ax_world = 0;}
+  if (fabsf(ay_world ) < 8.0f) {ay_world = 0;}
+  vx_est += -ax_world * dt; vy_est += ay_world * dt;
 
   //----------Magnetometer-------------------
   float dt_mag = (esp_timer_get_time() - lastMagUpdate) * 1e-6f;
@@ -312,20 +317,19 @@ void updateFilter() {
     vx = vx * fabsf(cosf(pitch_ag*DEG_TO_RAD));
     vy = vy * fabsf(cosf(roll_ag*DEG_TO_RAD));
 
-    vx = applyFilter(stVX, vCoeffs, vx);
-    vy = applyFilter(stVY, vCoeffs, vy);
-
     vx_f += constrain((vx - vx_f), -VEL_SPIKE_THRESHOLD, VEL_SPIKE_THRESHOLD);
     vy_f += constrain((vy - vy_f), -VEL_SPIKE_THRESHOLD, VEL_SPIKE_THRESHOLD);
+    vx_f  = applyFilter(stVX, vCoeffs, vx_f);
+    vy_f  = applyFilter(stVY, vCoeffs, vy_f);
 
-
-
-
-    if (fabsf(vx_f) < 0.2f/qualityScale) {vx_f = 0;}
-    if (fabsf(vy_f) < 0.2f/qualityScale) {vy_f = 0;}
-
+    if (fabsf(vx_f) < 0.5f/qualityScale) {vx_f = 0;}
+    if (fabsf(vy_f) < 0.5f/qualityScale) {vy_f = 0;}
+    float fuse_factor = 0.7f; // How much we trust the flow per update
+    vx_est = vx_est + fuse_factor * (vx_f - vx_est);
+    vy_est = vy_est + fuse_factor * (vy_f - vy_est);
     newLidar = false;
   }
-  
+  //vx_est = applyFilter(stVesX, vesCoeffs, vx_est);
+  //vy_est = applyFilter(stVesY, vesCoeffs, vy_est);
 
 }

@@ -1,8 +1,8 @@
 #pragma once
 
 // -------------------- WiFi --------------------
-#define WIFI_SSID     "ssid"
-#define WIFI_PASSWORD "password"
+#define WIFI_SSID     "----"
+#define WIFI_PASSWORD "----"
 
 // -------------------- Pins --------------------
 // I2C
@@ -55,10 +55,10 @@
 #define ACC_LPF_CUTOFF  8.0f
 #define GYRO_LPF_CUTOFF 40.0f
 #define MAG_LPF_CUTOFF   0.4f
-#define FLOW_LPF_CUTOFF   5.0f
+#define FLOW_LPF_CUTOFF   20.0f
 #define GYRO_DEADBAND  0.30f
 #define GYRO_DEADBAND_Z 0.30f
-#define VEL_SPIKE_THRESHOLD 100.0f
+#define VEL_SPIKE_THRESHOLD 25.0f
 #define FLOW_OFFSET_X  0.0f   // +forward
 #define FLOW_OFFSET_Y  0.09f 
 #define FLOW_QUALITY_MIN 30
@@ -100,18 +100,25 @@
 }
 
 // -------------------- PID Gains --------------------
-// Angle (outer) loop
-#define ROLL_ANGLE_KP   5.0f
+// Velocity loop
+#define VEL_KP   0.07f
+#define VEL_KI   0.01f
+#define VEL_KD   0.0001f
+#define VEL_ANGLE_LIM  8.0f
+
+
+// Angle loop
+#define ROLL_ANGLE_KP   9.0f
 #define ROLL_ANGLE_KI   0.0f
 #define ROLL_ANGLE_KD   0.0f
 #define ROLL_ANGLE_LIM  150.0f
 
-#define PITCH_ANGLE_KP  5.0f
+#define PITCH_ANGLE_KP  9.0f
 #define PITCH_ANGLE_KI  0.0f
 #define PITCH_ANGLE_KD  0.0f
 #define PITCH_ANGLE_LIM 150.0f
 
-// Rate (inner) loop
+// Rate loop
 #define ROLL_RATE_KP   0.40f
 #define ROLL_RATE_KI   0.0005f
 #define ROLL_RATE_KD   0.00f
@@ -122,14 +129,22 @@
 #define PITCH_RATE_KD  0.00f
 #define PITCH_RATE_LIM 200.0f
 
-#define YAW_RATE_KP    0.40f
-#define YAW_RATE_KI    0.02f
-#define YAW_RATE_KD    0.0001f
+#define YAW_RATE_KP    1.02f
+#define YAW_RATE_KI    0.5f
+#define YAW_RATE_KD    0.02f
 #define YAW_RATE_LIM   200.0f
 
+// Altitude loop
+#define ALT_KP  1.5f
+#define ALT_KI   0.05f
+#define ALT_KD   0.8f
+#define ALT_RATE_LIMIT  300.0f
+
 // Derivative filter alpha (higher = less filtering)
+#define PID_D_ALPHA_VEL 0.02f
 #define PID_D_ALPHA_ANGLE 0.02f
 #define PID_D_ALPHA_RATE  0.05f
+#define PID_D_ALPHA_ALT 0.02f
 
 // -------------------- Mahony Filter --------------------
 #define MAHONY_KP  1.0f
@@ -140,3 +155,5 @@
 #define YAW_RATE_SCALE  0.20f    // yawOffset  -> desired yaw rate (deg/s)
 #define LOW_THROTTLE_THRESHOLD 1090
 #define SPEED_SOUND 0.000343f
+#define MAX_ALTITUDE 4.5f
+#define HEIGHT_SPIKE_LIMIT 0.5f

@@ -73,8 +73,8 @@ void TelemetryTask(void *pvParameters) {
   for (;;) {
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(50));
     //xLastWakeTime = xTaskGetTickCount();
-    remotePrint("pitch: %.2f, roll: %.2f, vx:%.6f, vy:%.6f, quality: %d \r\n", pitch_ag, roll_ag, vx_f, vy_f, flow_quality);
-    //remotePrint("   M1:%d M2:%d M3:%d M4:%d  off:%d %d %d %d\r\n", m1_corr, m2_corr, m3_corr, m4_corr, m1, m2, m3, m4);
+    remotePrint("vx_est: %.2f, vy_est: %.2f, vx:%.6f, vy:%.6f, height: %0.6f ", vx_est, vy_est, vx_f, vy_f, height_lidar* cos(roll_ag* DEG_TO_RAD) * cos(pitch_ag* DEG_TO_RAD));
+    remotePrint("   M1:%d M2:%d M3:%d M4:%d  off:%d %d %d %d\r\n", m1_corr, m2_corr, m3_corr, m4_corr, m1, m2, m3, throttle);
     //remotePrint("   X: %d  Y: %d  Z: %d", magX, magY, magZ); remotePrint("   X: %.4f  Y: %.4f  Z: %.4f", mx_f, my_f, mz_f);
     //remotePrint("   X: %d  Y: %d  Z: %d", accX, accY, accZ); remotePrint("   X: %.4f  Y: %.4f  Z: %.4f \r\n", ax_f, ay_f, az_f);
     if (telnetServer.hasClient()) {
@@ -103,7 +103,8 @@ void setup() {
   sensorSerial.begin(115200, SERIAL_8N1, RX_MTF, TX_MTF);
   memset(&msg, 0, sizeof(msg));
   initFilter();
-  initMotors("4c:b9:9b:0c:2b:63");
+  //initMotors("4c:b9:9b:0c:2b:63");
+  initMotors("14:3a:9a:39:3b:b7");
 
   hw_timer_t *t1 = timerBegin(1, 80, true);
   timerAttachInterrupt(t1, &onLidarTimer, true);
