@@ -22,6 +22,7 @@ volatile float vx = 0, vy = 0, vz = 0, vx_f = 0, vy_f = 0, vz_f = 0;
 volatile float height_lidar = 0;
 volatile bool newLidar = false;
 volatile uint8_t  flow_quality = 0;
+volatile float height_filtered = 0;
 
 Kalman1D kx = {0, 100.0f, 50.0f, 15.0f};
 Kalman1D ky = {0, 100.0f, 50.0f, 15.0f};
@@ -32,7 +33,7 @@ int16_t gyroX, gyroY, gyroZ;
 int16_t magX, magY, magZ;
 
 BiquadState stGX, stGY, stGZ, stAX, stAY, stAZ;
-BiquadState stMX, stMY, stMZ, stVX, stVY, stVZ, stVesX, stVesY;
+BiquadState stMX, stMY, stMZ, stVX, stVY, stVZ, stH;
 
 SemaphoreHandle_t magMutex = xSemaphoreCreateMutex();
 
@@ -231,7 +232,9 @@ float applyFilter(BiquadState &s, BiquadCoeffs &c, float input) {
 void updateFilter() {
   static uint64_t filterLastMicros = esp_timer_get_time();
   static uint64_t lastMagUpdate    = esp_timer_get_time();
-  static uint64_t lastLidarFlowUpdate    = esp_timer_get_time();
+  static uint64_t lastLidarFlowUpdate = esp_timer_get_time();
+  static float gyroAccumX = 0.0f, gyroAccumY = 0.0f, gyroAccumZ = 0.0f;
+  static int   gyroAccumCount = 0;
 
 
   readMPU();
@@ -242,10 +245,9 @@ void updateFilter() {
   filterLastMicros = now;
   if (dt <= 0.0001f || dt > 0.05f) return;
 
-  BiquadCoeffs gCoeffs, aCoeffs, mCoeffs, vCoeffs, vesCoeffs;
+  BiquadCoeffs gCoeffs, aCoeffs, mCoeffs, vCoeffs, hCoeffs;
   computeCoeffs(gCoeffs, GYRO_LPF_CUTOFF, dt);
   computeCoeffs(aCoeffs, ACC_LPF_CUTOFF, dt);
-  computeCoeffs(vesCoeffs, 100.0f, dt);
 
   // Gyro
   float gx = gyroX / 32.8f;
@@ -301,35 +303,52 @@ void updateFilter() {
     if (yaw_mag < 0.0f) yaw_mag += 360.0f;
   }
   
+  // Average gyro after 10 loops for velocity compensation
+  gyroAccumX += gx_f;
+  gyroAccumY += gy_f;
+  gyroAccumZ += gz_f;
+  gyroAccumCount++;
+
+
   if (newLidar){
     uint64_t now = esp_timer_get_time();
     float dt_lidar = (now - lastLidarFlowUpdate) * 1e-6f;
     lastLidarFlowUpdate = now;
+
     float qualityScale = constrain(flow_quality / 200.0f, 0.1f, 1.0f);
     float dynamicLPF = FLOW_LPF_CUTOFF * qualityScale;
-    computeCoeffs(vCoeffs, dynamicLPF, dt_lidar);
-    vx -= (gyroY / 32.8f) * DEG_TO_RAD * height_lidar * 100.0f;
-    vy -= (gyroX / 32.8f) * DEG_TO_RAD * height_lidar * 100.0f;
 
-    vx -= -(gyroZ / 32.8f) * DEG_TO_RAD * FLOW_OFFSET_Y * 100.0f;
-    vy -=  (gyroZ / 32.8f) * DEG_TO_RAD * FLOW_OFFSET_X * 100.0f;
+    computeCoeffs(vCoeffs, dynamicLPF, dt_lidar);
+    computeCoeffs(hCoeffs, HEIGHT_LPF, dt_lidar);
+    height_lidar = applyFilter(stH, hCoeffs, height_lidar);
+    height_filtered += constrain((height_lidar - height_filtered), -0.005f, 0.005f);
+
+    float avgGX = (gyroAccumCount > 0) ? gyroAccumX / gyroAccumCount : gx_f;
+    float avgGY = (gyroAccumCount > 0) ? gyroAccumY / gyroAccumCount : gy_f;
+    float avgGZ = (gyroAccumCount > 0) ? gyroAccumZ / gyroAccumCount : gz_f;
+
+    gyroAccumX = gyroAccumY = gyroAccumZ = 0.0f;
+    gyroAccumCount = 0;
+    vx -= (avgGY) * DEG_TO_RAD * height_lidar * 100.0f;
+    vy -= (avgGX) * DEG_TO_RAD * height_lidar * 100.0f;
+    vx -= -(avgGZ) * DEG_TO_RAD * FLOW_OFFSET_Y * 100.0f;
+    vy -=  (avgGZ) * DEG_TO_RAD * FLOW_OFFSET_X * 100.0f;
 
     vx = vx * fabsf(cosf(pitch_ag*DEG_TO_RAD));
     vy = vy * fabsf(cosf(roll_ag*DEG_TO_RAD));
-
     vx_f += constrain((vx - vx_f), -VEL_SPIKE_THRESHOLD, VEL_SPIKE_THRESHOLD);
     vy_f += constrain((vy - vy_f), -VEL_SPIKE_THRESHOLD, VEL_SPIKE_THRESHOLD);
     vx_f  = applyFilter(stVX, vCoeffs, vx_f);
     vy_f  = applyFilter(stVY, vCoeffs, vy_f);
-
     if (fabsf(vx_f) < 0.5f/qualityScale) {vx_f = 0;}
     if (fabsf(vy_f) < 0.5f/qualityScale) {vy_f = 0;}
-    float fuse_factor = 0.7f; // How much we trust the flow per update
+
+    float fuse_factor = 0.9f; // How much we trust the flow per update
     vx_est = vx_est + fuse_factor * (vx_f - vx_est);
     vy_est = vy_est + fuse_factor * (vy_f - vy_est);
+
     newLidar = false;
   }
-  //vx_est = applyFilter(stVesX, vesCoeffs, vx_est);
-  //vy_est = applyFilter(stVesY, vesCoeffs, vy_est);
+
 
 }

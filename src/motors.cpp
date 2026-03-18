@@ -64,12 +64,13 @@ void initMotors(const char* ps5Mac) {
 void readPS5() {
 if (!ps5.isConnected()) {
     throttle = 1000;
+    armed = false;
     rollOffset = pitchOffset = yawOffset = 0;
     return;
   }
   static bool xPressedLast = false;
   bool xPressedNow = ps5.Cross();
-  real_height =  fabsf(height_lidar* cos(roll_ag* DEG_TO_RAD) * cos(pitch_ag* DEG_TO_RAD));
+  real_height =  fabsf(height_filtered* cos(roll_ag* DEG_TO_RAD) * cos(pitch_ag* DEG_TO_RAD * 100.0f)); // tilt compensation and unit conversion to cm
   if (armed){
     if (xPressedNow && !xPressedLast) {
       if (!altHoldActive) {

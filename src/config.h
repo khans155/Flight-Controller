@@ -1,8 +1,8 @@
 #pragma once
 
 // -------------------- WiFi --------------------
-#define WIFI_SSID     "----"
-#define WIFI_PASSWORD "----"
+#define WIFI_SSID     "-----"
+#define WIFI_PASSWORD "-----"
 
 // -------------------- Pins --------------------
 // I2C
@@ -52,10 +52,11 @@
 #define  QMC5883P_SETRESET_OFF  0x02      ///< Set and reset off
 
 // -------------------- Sensor Stuff --------------------
-#define ACC_LPF_CUTOFF  8.0f
+#define ACC_LPF_CUTOFF  5.0f
 #define GYRO_LPF_CUTOFF 40.0f
 #define MAG_LPF_CUTOFF   0.4f
-#define FLOW_LPF_CUTOFF   20.0f
+#define FLOW_LPF_CUTOFF   15.0f
+#define HEIGHT_LPF 5.0f
 #define GYRO_DEADBAND  0.30f
 #define GYRO_DEADBAND_Z 0.30f
 #define VEL_SPIKE_THRESHOLD 25.0f
@@ -74,17 +75,17 @@
 #define M4_OFFSET_DEFAULT 1.0f
 
 // -------------------- Calibration --------------------
-#define ACC_OFFSET_X   1016.50f
-#define ACC_OFFSET_Y  -544.50f
-#define ACC_OFFSET_Z  -1236.50f
+#define ACC_OFFSET_X   1011.00f
+#define ACC_OFFSET_Y  -569.00f
+#define ACC_OFFSET_Z  -1339.50f
 
 #define GYRO_OFFSET_X  -145.08905f
 #define GYRO_OFFSET_Y   33.3236f
 #define GYRO_OFFSET_Z  -78.5578f
 
-#define ACC_SCALE_X  0.9981f
-#define ACC_SCALE_Y  0.9954f
-#define ACC_SCALE_Z  0.9767f
+#define ACC_SCALE_X  0.9972f
+#define ACC_SCALE_Y  0.9948f
+#define ACC_SCALE_Z  0.9763f
 
 #define MAG_OFFSET_X  -260.10f
 #define MAG_OFFSET_Y   -470.07f
@@ -101,9 +102,9 @@
 
 // -------------------- PID Gains --------------------
 // Velocity loop
-#define VEL_KP   0.07f
-#define VEL_KI   0.01f
-#define VEL_KD   0.0001f
+#define VEL_KP   0.01f
+#define VEL_KI   0.005f
+#define VEL_KD   0.00001f
 #define VEL_ANGLE_LIM  8.0f
 
 
@@ -129,13 +130,13 @@
 #define PITCH_RATE_KD  0.00f
 #define PITCH_RATE_LIM 200.0f
 
-#define YAW_RATE_KP    1.02f
-#define YAW_RATE_KI    0.5f
-#define YAW_RATE_KD    0.02f
+#define YAW_RATE_KP    0.82f
+#define YAW_RATE_KI    0.01f
+#define YAW_RATE_KD    0.001f
 #define YAW_RATE_LIM   200.0f
 
 // Altitude loop
-#define ALT_KP  1.5f
+#define ALT_KP  30.5f
 #define ALT_KI   0.05f
 #define ALT_KD   0.8f
 #define ALT_RATE_LIMIT  300.0f
@@ -155,5 +156,5 @@
 #define YAW_RATE_SCALE  0.20f    // yawOffset  -> desired yaw rate (deg/s)
 #define LOW_THROTTLE_THRESHOLD 1090
 #define SPEED_SOUND 0.000343f
-#define MAX_ALTITUDE 4.5f
-#define HEIGHT_SPIKE_LIMIT 0.5f
+#define MAX_ALTITUDE 450.0f
+#define HEIGHT_SPIKE_LIMIT 5.0f

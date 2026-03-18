@@ -1,8 +1,8 @@
-#include "src/config.h"
-#include "src/sensors.h"
-#include "src/motors.h"
-#include "src/comms.h"
-#include "src/optical_flow.h"
+#include "config.h"
+#include "sensors.h"
+#include "motors.h"
+#include "comms.h"
+#include "optical_flow.h"
 
 //hw_timer_t *sensorTimer     = NULL;
 hw_timer_t *lidarTimer      = NULL;
@@ -71,9 +71,10 @@ void controllerTask(void *pvParameters) {
 void TelemetryTask(void *pvParameters) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;) {
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(50));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
     //xLastWakeTime = xTaskGetTickCount();
-    remotePrint("vx_est: %.2f, vy_est: %.2f, vx:%.6f, vy:%.6f, height: %0.6f ", vx_est, vy_est, vx_f, vy_f, height_lidar* cos(roll_ag* DEG_TO_RAD) * cos(pitch_ag* DEG_TO_RAD));
+    //remotePrint("vx_est: %.2f, vy_est: %.2f, vx:%.6f, vy:%.6f, height: %0.6f ", vx_est, vy_est, vx_f, vy_f, height_filtered* cosf(roll_ag* DEG_TO_RAD) * cosf(pitch_ag* DEG_TO_RAD)*100.0f);
+    remotePrint("Pitch: %.2f, Roll: %.2f, ax_f:%.6f, ay_f:%.6f, az_f: %0.6f ", pitch_ag, roll_ag, ax_f, ay_f, az_f);
     remotePrint("   M1:%d M2:%d M3:%d M4:%d  off:%d %d %d %d\r\n", m1_corr, m2_corr, m3_corr, m4_corr, m1, m2, m3, throttle);
     //remotePrint("   X: %d  Y: %d  Z: %d", magX, magY, magZ); remotePrint("   X: %.4f  Y: %.4f  Z: %.4f", mx_f, my_f, mz_f);
     //remotePrint("   X: %d  Y: %d  Z: %d", accX, accY, accZ); remotePrint("   X: %.4f  Y: %.4f  Z: %.4f \r\n", ax_f, ay_f, az_f);

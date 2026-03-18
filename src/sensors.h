@@ -24,6 +24,8 @@ extern volatile float vx, vy, vz, vx_f, vy_f, vz_f;
 extern volatile float height_lidar;
 extern volatile bool newLidar;
 extern volatile uint8_t  flow_quality;
+extern volatile float height_filtered;
+
 extern Kalman1D kx;
 extern Kalman1D ky;
 
