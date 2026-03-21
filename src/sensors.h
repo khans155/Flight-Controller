@@ -29,20 +29,23 @@ extern volatile float height_filtered;
 extern Kalman1D kx;
 extern Kalman1D ky;
 
-
-// Raw sensor values (needed by calibrateMPU)
-extern int16_t gyroX, gyroY, gyroZ;
-extern int16_t accX, accY, accZ;
+extern int16_t gyroX, gyroY, gyroZ, gyro2X, gyro2Y, gyro2Z;
+extern int16_t accX, accY, accZ, acc2X, acc2Y, acc2Z;
 extern int16_t magX, magY, magZ;
 
 extern SemaphoreHandle_t magMutex;
 
-void initSensors();        // Wire setup + MPU/mag register writes
+void i2c_init();
+void initSensors();        
 void initFilter();   
 void calibrateMPU();
 void readMPU();
+void readMPU2();
 void readMag();
-void applyMPUCalibration(int16_t &gx, int16_t &gy, int16_t &gz,
-                         int16_t &ax, int16_t &ay, int16_t &az);
+void applyMPUCalibration1(int16_t &gx, int16_t &gy, int16_t &gz,
+                                  int16_t &ax, int16_t &ay, int16_t &az);
+
+void applyMPUCalibration2(int16_t &gx, int16_t &gy, int16_t &gz,
+                                  int16_t &ax, int16_t &ay, int16_t &az);
 void applyMagCalibration(float &x, float &y, float &z);
 void updateFilter();

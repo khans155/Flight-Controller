@@ -85,3 +85,48 @@ void getWorldAcceleration(float ax, float ay, float az, float &worldX, float &wo
     worldY *= 981.0f;
     // worldZ *= 981.0f;
 }
+
+void getWorldVelocity(float vx, float vy, float &worldX, float &worldY) {
+    // Same quaternion rotation as getWorldAcceleration
+    // but no gravity removal and no unit scaling — velocity is already in cm/s
+
+    float q0q0 = q0 * q0;
+    float q1q1 = q1 * q1;
+    float q2q2 = q2 * q2;
+    float q3q3 = q3 * q3;
+
+    float q0q3 = q0 * q3;
+    float q1q2 = q1 * q2;
+
+    // Only need the X and Y rows of the rotation matrix
+    // vz from flow sensor is 0 so those terms drop out
+    worldX = vx * (q0q0 + q1q1 - q2q2 - q3q3) + vy * 2.0f * (q1q2 - q0q3);
+    worldY = vx * 2.0f * (q1q2 + q0q3)         + vy * (q0q0 - q1q1 + q2q2 - q3q3);
+}
+
+void getBodyVelocity(float vx_world, float vy_world, float &bodyX, float &bodyY) {
+    // Inverse (transpose) of getWorldVelocity rotation matrix
+    // Swaps the sign on the q0q3 cross terms in the off-diagonal elements
+
+    float q0q0 = q0 * q0;
+    float q1q1 = q1 * q1;
+    float q2q2 = q2 * q2;
+    float q3q3 = q3 * q3;
+
+    float q0q3 = q0 * q3;
+    float q1q2 = q1 * q2;
+
+    bodyX = vx_world * (q0q0 + q1q1 - q2q2 - q3q3) + vy_world * 2.0f * (q1q2 + q0q3);
+    bodyY = vx_world * 2.0f * (q1q2 - q0q3)         + vy_world * (q0q0 - q1q1 + q2q2 - q3q3);
+}
+
+void getLinearAcceleration(float ax, float ay, float az, float &linAx, float &linAy) {
+    // Calculate the Direction of Gravity (G) in the Body Frame based on the Quaternion
+    float gx = 2.0f * (q1 * q3 - q0 * q2);
+    float gy = 2.0f * (q0 * q1 + q2 * q3);
+    float gz = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3;
+    linAx = ax - gx;
+    linAy = ay - gy;
+    linAx *= 981.0f; 
+    linAy *= 981.0f;
+}

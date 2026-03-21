@@ -23,10 +23,18 @@
 #define PWM_MAX        65535
 #define PWM_PERIOD_US  2500
 
-// -------------------- I2C Addresses --------------------
+// -------------------- I2C --------------------
+#define I2C_PORT I2C_NUM_0
+#define I2C_SDA  21
+#define I2C_SCL  22
+#define I2C_FREQ 1000000
+#define I2C_TIMEOUT_MS pdMS_TO_TICKS(5)
+
 #define MPU_ADDR 0x68
+#define MPU2_ADDR 0x69
 #define MAG_ADDR 0x2C
 #define BMP280_ADDR 0x76
+
 
 // -------------------- MAG CONFIG --------------------
 #define  QMC5883P_MODE_NORMAL  0x01    ///< Normal mode
@@ -52,16 +60,16 @@
 #define  QMC5883P_SETRESET_OFF  0x02      ///< Set and reset off
 
 // -------------------- Sensor Stuff --------------------
-#define ACC_LPF_CUTOFF  5.0f
+#define ACC_LPF_CUTOFF  8.0f
 #define GYRO_LPF_CUTOFF 40.0f
 #define MAG_LPF_CUTOFF   0.4f
-#define FLOW_LPF_CUTOFF   15.0f
-#define HEIGHT_LPF 5.0f
-#define GYRO_DEADBAND  0.30f
+#define FLOW_LPF_CUTOFF   10.0f
+#define HEIGHT_LPF 2.0f
+#define GYRO_DEADBAND  0.25f
 #define GYRO_DEADBAND_Z 0.30f
-#define VEL_SPIKE_THRESHOLD 25.0f
+#define VEL_SPIKE_THRESHOLD 0.5f
 #define FLOW_OFFSET_X  0.0f   // +forward
-#define FLOW_OFFSET_Y  0.09f 
+#define FLOW_OFFSET_Y  0.10f 
 #define FLOW_QUALITY_MIN 30
 
 #define MAG_SAMPLE_RATE 20.0f  //Hz
@@ -75,23 +83,35 @@
 #define M4_OFFSET_DEFAULT 1.0f
 
 // -------------------- Calibration --------------------
-#define ACC_OFFSET_X   1011.00f
-#define ACC_OFFSET_Y  -569.00f
-#define ACC_OFFSET_Z  -1339.50f
+#define ACC_OFFSET_X   1031.00f
+#define ACC_OFFSET_Y  -865.50f
+#define ACC_OFFSET_Z  -511.00f
 
-#define GYRO_OFFSET_X  -145.08905f
-#define GYRO_OFFSET_Y   33.3236f
-#define GYRO_OFFSET_Z  -78.5578f
+#define ACC2_OFFSET_X   1081.50f
+#define ACC2_OFFSET_Y  -409.50f
+#define ACC2_OFFSET_Z  -1073.50f
 
-#define ACC_SCALE_X  0.9972f
-#define ACC_SCALE_Y  0.9948f
-#define ACC_SCALE_Z  0.9763f
+#define GYRO_OFFSET_X  -31.4412f
+#define GYRO_OFFSET_Y   47.4639f
+#define GYRO_OFFSET_Z  -5.3521f
+
+#define GYRO2_OFFSET_X  -34.6470f
+#define GYRO2_OFFSET_Y   7.1321f
+#define GYRO2_OFFSET_Z  -29.9797f
+
+#define ACC_SCALE_X  0.9960f
+#define ACC_SCALE_Y  0.9934f
+#define ACC_SCALE_Z  0.9786f
+
+#define ACC2_SCALE_X  0.9929f
+#define ACC2_SCALE_Y  0.9967f
+#define ACC2_SCALE_Z  0.9861f
 
 #define MAG_OFFSET_X  -260.10f
 #define MAG_OFFSET_Y   -470.07f
 #define MAG_OFFSET_Z   100.90f
 
-#define ROLL_OFFSET 0.0f
+#define ROLL_OFFSET 1.6f
 #define PITCH_OFFSET 0.0f
 
 #define SOFT_IRON { \
@@ -102,43 +122,43 @@
 
 // -------------------- PID Gains --------------------
 // Velocity loop
-#define VEL_KP   0.01f
-#define VEL_KI   0.005f
-#define VEL_KD   0.00001f
+#define VEL_KP   0.15f
+#define VEL_KI   0.01f
+#define VEL_KD   0.0015f
 #define VEL_ANGLE_LIM  8.0f
 
 
 // Angle loop
 #define ROLL_ANGLE_KP   9.0f
-#define ROLL_ANGLE_KI   0.0f
+#define ROLL_ANGLE_KI   0.0001f
 #define ROLL_ANGLE_KD   0.0f
 #define ROLL_ANGLE_LIM  150.0f
 
 #define PITCH_ANGLE_KP  9.0f
-#define PITCH_ANGLE_KI  0.0f
+#define PITCH_ANGLE_KI  0.0001f
 #define PITCH_ANGLE_KD  0.0f
 #define PITCH_ANGLE_LIM 150.0f
 
 // Rate loop
-#define ROLL_RATE_KP   0.40f
-#define ROLL_RATE_KI   0.0005f
-#define ROLL_RATE_KD   0.00f
+#define ROLL_RATE_KP   0.35f
+#define ROLL_RATE_KI   0.00001f
+#define ROLL_RATE_KD   0.00001f
 #define ROLL_RATE_LIM  200.0f
 
-#define PITCH_RATE_KP  0.40f
-#define PITCH_RATE_KI  0.0005f
-#define PITCH_RATE_KD  0.00f
+#define PITCH_RATE_KP  0.35f
+#define PITCH_RATE_KI  0.00001f
+#define PITCH_RATE_KD  0.00001f
 #define PITCH_RATE_LIM 200.0f
 
-#define YAW_RATE_KP    0.82f
-#define YAW_RATE_KI    0.01f
-#define YAW_RATE_KD    0.001f
+#define YAW_RATE_KP    0.75f
+#define YAW_RATE_KI    0.3f
+#define YAW_RATE_KD    0.01f
 #define YAW_RATE_LIM   200.0f
 
 // Altitude loop
-#define ALT_KP  30.5f
+#define ALT_KP  5.5f
 #define ALT_KI   0.05f
-#define ALT_KD   0.8f
+#define ALT_KD   0.01f
 #define ALT_RATE_LIMIT  300.0f
 
 // Derivative filter alpha (higher = less filtering)
@@ -152,8 +172,8 @@
 #define MAHONY_KI  0.005f
 
 // -------------------- OTHER --------------------
-#define ANGLE_SCALE     0.02f   // rollOffset -> desired angle (deg)
-#define YAW_RATE_SCALE  0.20f    // yawOffset  -> desired yaw rate (deg/s)
+#define ANGLE_SCALE     0.03f   // rollOffset -> desired angle (deg)
+#define YAW_RATE_SCALE  0.30f    // yawOffset  -> desired yaw rate (deg/s)
 #define LOW_THROTTLE_THRESHOLD 1090
 #define SPEED_SOUND 0.000343f
 #define MAX_ALTITUDE 450.0f
