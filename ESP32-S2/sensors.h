@@ -22,9 +22,13 @@ extern float vx_est, vy_est;
 
 extern volatile float vx, vy, vz, vx_f, vy_f, vz_f;
 extern volatile float height_lidar;
+extern volatile float height_baro;
 extern volatile bool newLidar;
+extern volatile bool baroFlag;
 extern volatile uint8_t  flow_quality;
 extern volatile float height_filtered;
+extern volatile float gyro_lpf;
+extern volatile float gyro_notch;
 
 extern Kalman1D kx;
 extern Kalman1D ky;
@@ -33,9 +37,9 @@ extern int16_t gyroX, gyroY, gyroZ, gyro2X, gyro2Y, gyro2Z;
 extern int16_t accX, accY, accZ, acc2X, acc2Y, acc2Z;
 extern int16_t magX, magY, magZ;
 
-extern SemaphoreHandle_t magMutex;
-
 void i2c_init();
+void writeRegister(in_port_t port, uint8_t addr, uint8_t reg, uint8_t val);
+uint8_t readRegister(in_port_t port, uint8_t addr, uint8_t reg);
 void initSensors();        
 void initFilter();   
 void calibrateMPU();

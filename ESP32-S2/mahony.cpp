@@ -14,9 +14,14 @@ void mahonyUpdate(float gx, float gy, float gz,
 
   float accelDeviation = fabsf(accNorm - 1.0f);
   float accelWeight = 0.0f;
-  if (accelDeviation < 0.2f) {  
-    float t = accelDeviation / 0.2f;
-    accelWeight = 0.5f * (1.0f + cosf(t * M_PI));
+
+  if (accelDeviation < 0.1f) {
+      accelWeight = 1.0f; 
+  } else if (accelDeviation < 0.15f) {
+ 
+      accelWeight = 1.0f - (accelDeviation - 0.1f) / 0.15f;
+  } else {
+      accelWeight = 0.0f;
   }
   ax /= accNorm; ay /= accNorm; az /= accNorm;
 
@@ -27,6 +32,9 @@ void mahonyUpdate(float gx, float gy, float gz,
   float ex = (ay*vz - az*vy) * accelWeight;
   float ey = (az*vx - ax*vz) * accelWeight;
   float ez = (ax*vy - ay*vx) * accelWeight;
+
+  float gyroMag = sqrtf(gx*gx + gy*gy + gz*gz);
+  float kiBias = (gyroMag < HIGH_GYRO_THRESH_DPS) ? MAHONY_KI : 0.0f;
 
   gxBias += ex * MAHONY_KI * dt;
   gyBias += ey * MAHONY_KI * dt;

@@ -1,6 +1,7 @@
 #include "comms.h"
 #include "config.h"
 #include "motors.h"
+#include "sensors.h"
 #include <stdarg.h>
 
 WiFiServer telnetServer(23);
